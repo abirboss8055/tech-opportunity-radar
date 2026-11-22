@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Opportunity Radar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
+            <div>
+                <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white">Tech Opportunity Radar</h1>
+                <p class="text-slate-400 mt-1 text-sm sm:text-base">Daily automated feed of remote tech roles, internships, and open-source hackathons.</p>
+            </div>
+            <div class="flex flex-col sm:items-end text-xs font-mono text-slate-400 gap-1">
+                <span id="last-updated" class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-md">Syncing feed...</span>
+                <span id="result-count" class="text-slate-500"></span>
+            </div>
+        </header>
+
+        <!-- Search & Filter Controls -->
+        <section class="flex flex-col lg:flex-row gap-4 mb-8">
+            <div class="relative flex-1">
+                <input
+                    type="text"
+                    id="search-input"
+                    placeholder="Search by role, company, or tech stack (e.g. React, Python, Intern)..."
+                    class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+            </div>
+
+            <div id="filter-bar" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 lg:pb-0">
+                <button data-filter="All" class="filter-btn shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-colors">All</button>
+                <button data-filter="Internship" class="filter-btn shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Internship</button>
+                <button data-filter="Remote Role" class="filter-btn shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Remote Role</button>
+                <button data-filter="Hackathon / OSS" class="filter-btn shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Hackathon / OSS</button>
+                <button data-filter="Saved" id="saved-filter-btn" class="filter-btn shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Saved (0)</button>
+            </div>
+        </section>
+
+        <!-- Opportunity Cards Grid -->
+        <main id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Populated dynamically -->
+        </main>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-20 border border-dashed border-slate-800 rounded-xl">
+            <p class="text-slate-400 text-base font-medium">No matching opportunities found.</p>
+            <p class="text-slate-500 text-sm mt-1">Try adjusting your search query or switching filters.</p>
+        </div>
+    </div>
+
+    <script>
+        let allItems = [];
+        let activeFilter = 'All';
+        let searchQuery = '';
+        let bookmarks = new Set(JSON.parse(localStorage.getItem('radar_bookmarks') || '[]'));
+
+        const cardsGrid = document.getElementById('cards-grid');
+        const emptyState = document.getElementById('empty-state');
+        const searchInput = document.getElementById('search-input');
+        const lastUpdatedEl = document.getElementById('last-updated');
+        const resultCountEl = document.getElementById('result-count');
+        const savedFilterBtn = document.getElementById('saved-filter-btn');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function getCategoryStyle(category) {
+            if (category === 'Internship') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            if (category === 'Hackathon / OSS') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+            return 'bg-sky-500/10 text-sky-400 border-sky-500/20';
+        }
+
+        function updateSavedCount() {
+            savedFilterBtn.textContent = `Saved (${bookmarks.size})`;
+        }
+
+        function toggleBookmark(id) {
+            if (bookmarks.has(id)) {
+                bookmarks.delete(id);
+            } else {
+                bookmarks.add(id);
+            }
+            localStorage.setItem('radar_bookmarks', JSON.stringify([...bookmarks]));
+            updateSavedCount();
+            renderCards();
+        }
+
+        function renderCards() {
+            const filtered = allItems.filter(item => {
+                if (activeFilter === 'Saved' && !bookmarks.has(item.id)) return false;
+                if (activeFilter !== 'All' && activeFilter !== 'Saved' && item.category !== activeFilter) return false;
+
+                if (searchQuery) {
+                    const haystack = `${item.title} ${item.organization} ${item.location} ${(item.tags || []).join(' ')}`.toLowerCase();
+                    return haystack.includes(searchQuery);
+                }
+                return true;
+            });
+
+            resultCountEl.textContent = `Showing ${filtered.length} of ${allItems.length} opportunities`;
+            cardsGrid.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filtered.forEach(item => {
+                const isSaved = bookmarks.has(item.id);
+                const formattedDate = new Date(item.date).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                const tagsHtml = (item.tags || []).map(tag =>
+                    `<span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">${escapeHtml(tag)}</span>`
+                ).join('');
+
+                const card = document.createElement('article');
+                card.className = 'bg-slate-900/80 border border-slate-800 hover:border-slate-700 rounded-xl p-5 flex flex-col justify-between transition-all';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <span class="text-xs font-medium px-2.5 py-1 rounded-full border ${getCategoryStyle(item.category)}">
+                                ${escapeHtml(item.category)}
+                            </span>
+                            <button
+                                onclick="toggleBookmark('${escapeHtml(item.id)}')"
+                                aria-label="Toggle bookmark"
+                                class="text-xs font-medium px-2.5 py-1 rounded-md border transition-colors ${
+                                    isSaved
+                                        ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40'
+                                        : 'bg-slate-800/60 text-slate-400 border-slate-700 hover:text-white'
+                                }"
+                            >
+                                ${isSaved ? 'Saved' : 'Save'}
+                            </button>
+                        </div>
+
+                        <h2 class="text-lg font-semibold text-white leading-snug line-clamp-2 mb-1">
+                            ${escapeHtml(item.title)}
+                        </h2>
+                        <p class="text-sm text-slate-400 mb-3">
+                            ${escapeHtml(item.organization)} &middot; <span class="text-slate-500">${escapeHtml(item.location)}</span>
+                        </p>
+
+                        <div class="flex flex-wrap gap-1.5 mb-5">
+                            ${tagsHtml}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-800/80">
+                        <span class="text-xs text-slate-500 font-mono">${formattedDate}</span>
+                        <a
+                            href="${escapeHtml(item.url)}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                            View Details &rarr;
+                        </a>
+                    </div>
+                `;
+
+                cardsGrid.appendChild(card);
+            });
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeFilter = btn.dataset.filter;
+                filterButtons.forEach(b => {
+                    b.className = 'filter-btn shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors';
+                });
+                btn.className = 'filter-btn shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-colors';
+                renderCards();
+            });
+        });
+
+        searchInput.addEventListener('input', e => {
+            searchQuery = e.target.value.trim().toLowerCase();
+            renderCards();
+        });
+
+        async function init() {
+            try {
+                const res = await fetch('opportunities.json');
+                if (!res.ok) throw new Error('Failed to load opportunities.json');
+                const data = await res.json();
+
+                allItems = data.items || [];
+                lastUpdatedEl.textContent = 'Updated: ' + new Date(data.lastUpdated).toLocaleString();
+                updateSavedCount();
+                renderCards();
+            } catch (err) {
+                console.error(err);
+                lastUpdatedEl.textContent = 'Feed unavailable';
+                emptyState.classList.remove('hidden');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
