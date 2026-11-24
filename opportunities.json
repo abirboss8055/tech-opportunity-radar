@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-11-23T06:36:24.265Z",
-  "totalCount": 16,
+  "lastUpdated": "2026-11-24T09:04:30.717Z",
+  "totalCount": 15,
   "items": [
     {
       "id": "remotive-2091177",
@@ -209,7 +209,7 @@
     },
     {
       "id": "remotive-2091135",
-      "title": "Senior Back-end Developer",
+      "title": "Senior Back-end Developerusa",
       "organization": "Lemon.io",
       "category": "Remote Role",
       "location": "Europe, USA, Canada, Australia, Singapore, Mexico, Saudi Arabia",
@@ -219,22 +219,8 @@
         "C",
         "C#"
       ],
-      "url": "https://remotive.com/remote-jobs/software-development/senior-back-end-developer-2091135",
+      "url": "https://remotive.com/remote-jobs/software-development/senior-back-end-developerusa-2091135",
       "date": "2026-10-27T12:56:13"
-    },
-    {
-      "id": "remotive-2091161",
-      "title": "AI Trainer - Video Annotation",
-      "organization": "iMerit Technology",
-      "category": "Remote Role",
-      "location": "Worldwide",
-      "tags": [
-        "video",
-        "AI/ML",
-        "robotics"
-      ],
-      "url": "https://remotive.com/remote-jobs/artificial-intelligence/ai-trainer-video-annotation-2091161",
-      "date": "2026-10-22T18:40:19"
     }
   ]
 }
