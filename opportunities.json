@@ -1,7 +1,22 @@
 {
-  "lastUpdated": "2026-11-27T07:29:26.298Z",
-  "totalCount": 16,
+  "lastUpdated": "2026-11-28T06:58:23.752Z",
+  "totalCount": 17,
   "items": [
+    {
+      "id": "remotive-2091212",
+      "title": "Produktspezialist:in (German-speaking)",
+      "organization": "Creative Force ",
+      "category": "Remote Role",
+      "location": "Europe, EMEA, Germany, European timezones",
+      "tags": [
+        "api",
+        "CSS",
+        "html",
+        "javascript"
+      ],
+      "url": "https://remotive.com/remote-jobs/customer-service/produktspezialist-in-german-speaking-2091212",
+      "date": "2026-11-25T11:26:35"
+    },
     {
       "id": "remotive-2091179",
       "title": "WordPress Theme & Plugin Developer",
